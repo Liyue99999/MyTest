@@ -1,0 +1,163 @@
+import pyautogui,win32api,time
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium import webdriver
+from selenium.webdriver.support.select import Select
+browser=webdriver.Ie()
+browser.get('http://124.47.33.22')
+def exportexcel():#2020.1.3改动,目的少下载几张
+	global PassNumber
+	global buxiazai
+	browser.switch_to.parent_frame()
+	time.sleep(2)
+	browser.switch_to.frame("url_main_iframe_content")
+	time.sleep(2)
+	try:
+		browser.find_element_by_xpath("//span[text()='共1页']")
+		tiaojian1="y"
+	except:
+		tiaojian1="n"	
+	a=browser.find_elements_by_xpath("//div//span[contains(@class,'grid_black')]")
+	tiaojian2="n"
+	if len(a)%7!=0:#是不是未完成单据
+		for i in range(len(a)):
+			if "天" in a[i].text:
+				tiaojian2="y"#已经完成了的话，处理时间有没有超过一天
+				break
+	else:
+		print("未完成单据")
+		tiaojian2="y"
+	if tiaojian1=="y" and tiaojian2!="y":
+		print("pass")
+		tiaojian1="n"
+		tiaojian2="n"
+		PassNumber=PassNumber+1
+		buxiazai="1"
+	else:
+		browser.find_element_by_xpath("//span[text()='导出Excel']").click()
+		time.sleep(10)
+		tiaojian1="n"
+		tiaojian2="n"
+		buxiazai="0"
+	browser.switch_to.parent_frame()
+def closewindow():
+	time.sleep(2)
+	browser.find_element_by_xpath("//span[contains(@id,'url_close')]").click()
+	time.sleep(10)
+	browser.switch_to.parent_frame()
+	browser.switch_to.frame("main")
+def setbiao(ab):
+	try:
+		browser.switch_to.parent_frame()
+	except:
+		pass
+	try:
+		browser.switch_to.frame("main")
+	except:
+		pass
+
+	Select(browser.find_element_by_id("condition")).select_by_value(ab)
+	try:
+		a=browser.find_element_by_id("chooseTemplete")
+		ActionChains(browser).double_click(a).perform()
+	except:
+		pass
+	listform=browser.find_element_by_id("templeteName")
+	ActionChains(browser).double_click(listform).perform()
+	time.sleep(20)
+	browser.switch_to.parent_frame()
+	browser.switch_to.frame(browser.find_element_by_xpath("//iframe[contains(@id,'_main_iframe_content')]"))#进到可以选表单类型
+	biaoname=browser.find_elements_by_xpath("//span[contains(@id,'_span')]")
+	for i in range(int(len(biaoname))):
+		biaoname[i].click()#i=0老选不上
+		biaoname[i].click()#i=0老选不上
+		browser.find_element_by_id("select_selected").click()
+		browser.find_element_by_id("select_selected").click()
+		i=i+1
+		time.sleep(2)
+	browser.switch_to.parent_frame()
+	time.sleep(20)
+	queding=browser.find_element_by_xpath("//a[text()='确定']")
+	ActionChains(browser).double_click(queding).perform()
+	print("表单选择完毕")
+def setdepart():	
+	try:
+		browser.switch_to.parent_frame()
+	except:
+		pass
+	try:
+		browser.switch_to.frame("main")
+	except:
+		pass
+	browser.find_element_by_id("department").click()#打开部门框
+	browser.switch_to.parent_frame()#再等一会
+	time.sleep(20)
+	browser.switch_to.frame("SelectPeopleDialog_main_iframe_content") #选择部门框
+	departname=browser.find_elements_by_xpath("//a[contains(@id,'-anchor') and not(text()='公司领导') and not(text()='信息化部') and not(contains(text(),'分公司')) and not(contains(text(),'支公司'))]")
+	for i in range(int(len(departname))):
+		departname[i].click()
+		browser.find_element_by_class_name("select_selected").click()
+		time.sleep(2)
+	browser.switch_to.parent_frame()
+	time.sleep(20)
+	browser.find_element_by_xpath("//a[text()='确定']").click()
+	print("部门选择完毕")
+print("input c to continue:")
+s=input()
+while (s!="c"):
+	print("input continue to continue:")
+	s=input()
+
+while (s!="quit"):
+	#开始修改
+	print("1表单设置；2部门设置;3公文设置；4完成")
+	s=input()
+	while(s!="4"):
+		if s=="1":
+			setbiao("2")
+		elif s=="2":
+			setdepart()
+		elif s=="3":
+			setbiao("4")
+		else:
+			break
+		print("1表单设置；2部门设置;3公文设置；4手动点击统计、时间完成")
+		s=input()
+		
+	try:
+		browser.switch_to.parent_frame()
+	except:
+		pass
+	try:
+		browser.switch_to.frame("main")#在这加一个返回上方的尝试
+	except:
+		pass
+	data_list=browser.find_elements_by_xpath("//a[contains(@id,queryList) and contains(@onclick,'已发数量=')]")#data_list=browser.find_elements_by_id("queryList")
+	print("找到",str(len(data_list)),"条数据")
+	i=0
+	global PassNumber
+	global buxiazai
+	PassNumber=0
+	lenth=len(data_list)
+	for i in range(lenth):
+		data_list[i].click()#点开弹出页面
+		data_list[i].click()#点开弹出页面
+		time.sleep(10)
+		exportexcel()#click_save=pyautogui.locateOnScreen(r"C:\Users\Administrator\Desktop\locate\save.png")
+		if buxiazai=="0":
+			time.sleep(5)
+			pyautogui.hotkey('alt', 's')
+			time.sleep(10)
+			closewindow()#click_close=pyautogui.locateOnScreen(r"C:\Users\Administrator\Desktop\locate\close.png")
+			time.sleep(10)
+		else:
+			time.sleep(5)
+			closewindow()
+			time.sleep(5)
+		print("下载了" ,str(i+1),"总共",str(lenth),"条",time.ctime())
+		i=i+1
+	print("无需下载单据共计",PassNumber,"条")
+	print("这张下载完毕,按任意键继续,quit 退出")
+	win32api.MessageBox(0,"处理完毕")
+	s=input()
+print("完毕")
+#当前1分25秒1条
